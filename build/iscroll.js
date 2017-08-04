@@ -576,8 +576,12 @@ IScroll.prototype = {
 			deltaX = 0;
 		}
 
-		deltaX = this.hasHorizontalScroll ? deltaX : 0;
-		deltaY = this.hasVerticalScroll ? deltaY : 0;
+		// 当内容宽高没有超出容器，则不会有拉扯时的弹性效果
+		// 如果此时仍然需要弹性效果，可以修改如下代码：
+		// deltaX = this.hasHorizontalScroll ? deltaX : 0;
+		// deltaY = this.hasVerticalScroll ? deltaY : 0;
+		if (!this.options.scrollX) deltaX = this.hasHorizontalScroll ? deltaX : 0;
+		if (!this.options.scrollY) deltaY = this.hasVerticalScroll ? deltaY : 0;
 
 		newX = this.x + deltaX;
 		newY = this.y + deltaY;
@@ -750,7 +754,7 @@ IScroll.prototype = {
 		this.enabled = true;
 	},
 
-	refresh: function () {
+	refresh: function (duration) {
 		utils.getRect(this.wrapper);		// Force reflow
 
 		this.wrapperWidth	= this.wrapper.clientWidth;
@@ -769,7 +773,7 @@ IScroll.prototype = {
 
 		this.hasHorizontalScroll	= this.options.scrollX && this.maxScrollX < 0;
 		this.hasVerticalScroll		= this.options.scrollY && this.maxScrollY < 0;
-		
+
 		if ( !this.hasHorizontalScroll ) {
 			this.maxScrollX = 0;
 			this.scrollerWidth = this.wrapperWidth;
@@ -783,7 +787,7 @@ IScroll.prototype = {
 		this.endTime = 0;
 		this.directionX = 0;
 		this.directionY = 0;
-		
+
 		if(utils.hasPointer && !this.options.disablePointer) {
 			// The wrapper should have `touchAction` property for using pointerEvent.
 			this.wrapper.style[utils.style.touchAction] = utils.getTouchAction(this.options.eventPassthrough, true);
@@ -798,11 +802,12 @@ IScroll.prototype = {
 
 		this._execEvent('refresh');
 
-		this.resetPosition();
+		// 当scroll元素宽高改变时，如果超出了容器，复位时没有缓动效果，而有时却需要添加缓动
+		this.resetPosition(duration);
 
 // INSERT POINT: _refresh
 
-	},	
+	},
 
 	on: function (type, fn) {
 		if ( !this._events[type] ) {

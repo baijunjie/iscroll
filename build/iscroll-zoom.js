@@ -585,8 +585,12 @@ IScroll.prototype = {
 			deltaX = 0;
 		}
 
-		deltaX = this.hasHorizontalScroll ? deltaX : 0;
-		deltaY = this.hasVerticalScroll ? deltaY : 0;
+		// 当内容宽高没有超出容器，则不会有拉扯时的弹性效果
+		// 如果此时仍然需要弹性效果，可以修改如下代码：
+		// deltaX = this.hasHorizontalScroll ? deltaX : 0;
+		// deltaY = this.hasVerticalScroll ? deltaY : 0;
+		if (!this.options.scrollX) deltaX = this.hasHorizontalScroll ? deltaX : 0;
+		if (!this.options.scrollY) deltaY = this.hasVerticalScroll ? deltaY : 0;
 
 		newX = this.x + deltaX;
 		newY = this.y + deltaY;
@@ -759,7 +763,7 @@ IScroll.prototype = {
 		this.enabled = true;
 	},
 
-	refresh: function () {
+	refresh: function (duration) {
 		utils.getRect(this.wrapper);		// Force reflow
 
 		this.wrapperWidth	= this.wrapper.clientWidth;
@@ -776,7 +780,7 @@ IScroll.prototype = {
 
 		this.hasHorizontalScroll	= this.options.scrollX && this.maxScrollX < 0;
 		this.hasVerticalScroll		= this.options.scrollY && this.maxScrollY < 0;
-		
+
 		if ( !this.hasHorizontalScroll ) {
 			this.maxScrollX = 0;
 			this.scrollerWidth = this.wrapperWidth;
@@ -790,7 +794,7 @@ IScroll.prototype = {
 		this.endTime = 0;
 		this.directionX = 0;
 		this.directionY = 0;
-		
+
 		if(utils.hasPointer && !this.options.disablePointer) {
 			// The wrapper should have `touchAction` property for using pointerEvent.
 			this.wrapper.style[utils.style.touchAction] = utils.getTouchAction(this.options.eventPassthrough, true);
@@ -805,11 +809,12 @@ IScroll.prototype = {
 
 		this._execEvent('refresh');
 
-		this.resetPosition();
+		// 当scroll元素宽高改变时，如果超出了容器，复位时没有缓动效果，而有时却需要添加缓动
+		this.resetPosition(duration);
 
 // INSERT POINT: _refresh
 
-	},	
+	},
 
 	on: function (type, fn) {
 		if ( !this._events[type] ) {
@@ -1232,9 +1237,11 @@ IScroll.prototype = {
 			newY = this.maxScrollY;
 		}
 
-		if ( this.x != newX || this.y != newY ) {
-			this.scrollTo(newX, newY, this.options.bounceTime);
-		}
+		// 修复当缩放的scale值小于zoomMin时，如果容器内scroll元素的x/y为0，那么在复位时将没有缓动效果
+		// if ( this.x != newX || this.y != newY ) {
+		// 	this.scrollTo(newX, newY, this.options.bounceTime);
+		// }
+		this.scrollTo(newX, newY, this.options.bounceTime);
 
 		this.scaled = false;
 
@@ -1254,8 +1261,11 @@ IScroll.prototype = {
 
 		var relScale = scale / this.scale;
 
-		x = x === undefined ? this.wrapperWidth / 2 : x;
-		y = y === undefined ? this.wrapperHeight / 2 : y;
+		// 使 zoom() 缩放方法在不传入坐标的情况下，默认以 wrapper 中心点为基准进行缩放
+		// x = x === undefined ? this.wrapperWidth / 2 : x;
+		// y = y === undefined ? this.wrapperHeight / 2 : y;
+		x = x === undefined ? this.wrapperWidth / 2 - this.wrapperOffset.left : x;
+		y = y === undefined ? this.wrapperHeight / 2 - this.wrapperOffset.top : y;
 		time = time === undefined ? 300 : time;
 
 		x = x + this.wrapperOffset.left - this.x;
@@ -1294,21 +1304,25 @@ IScroll.prototype = {
 			that._execEvent('zoomEnd');
 		}, 400);
 
-		if ( 'deltaX' in e ) {
+		if ( 'deltaY' in e ) {
 			wheelDeltaY = -e.deltaY / Math.abs(e.deltaY);
-		} else if ('wheelDeltaX' in e) {
+		} else if ('wheelDeltaY' in e) {
 			wheelDeltaY = e.wheelDeltaY / Math.abs(e.wheelDeltaY);
 		} else if('wheelDelta' in e) {
 			wheelDeltaY = e.wheelDelta / Math.abs(e.wheelDelta);
 		} else if ('detail' in e) {
-			wheelDeltaY = -e.detail / Math.abs(e.wheelDelta);
+			wheelDeltaY = -e.detail / Math.abs(e.detail);
 		} else {
 			return;
 		}
 
-		deltaScale = this.scale + wheelDeltaY / 5;
+		if (isNaN(wheelDeltaY)) wheelDeltaY = 0; // MacBook 触摸板的 e.deltaY 可能为 0，导致 wheelDeltaY 为 NaN
+		deltaScale = this.scale + wheelDeltaY * 0.01; // 修改鼠标滚轮缩放倍率
 
 		this.zoom(deltaScale, e.pageX, e.pageY, 0);
+
+		e.preventDefault();
+		e.stopPropagation();
 	},
 
 	_initWheel: function () {

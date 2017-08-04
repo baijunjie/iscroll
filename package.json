@@ -4,6 +4,9 @@
   "version": "5.2.0-snapshot",
   "homepage": "http://iscrolljs.com",
   "author": "Matteo Spinelli <matteo@cubiq.org> (http://cubiq.org)",
+  "scripts": {
+    "build": "node build && node build zoom && node build lite && node build probe && node build infinite"
+  },
   "keywords": [
     "scrolling",
     "carousel",
