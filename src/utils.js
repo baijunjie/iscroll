@@ -292,7 +292,7 @@ var utils = (function () {
 	};
 
 	me.getRect = function(el) {
-		if (el instanceof SVGElement) {
+		if (typeof SVGElement !== 'undefined' && el instanceof SVGElement) {
 			var rect = el.getBoundingClientRect();
 			return {
 				top : rect.top,

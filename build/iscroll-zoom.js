@@ -1,4 +1,4 @@
-/*! iScroll v5.2.0-snapshot ~ (c) 2008-2017 Matteo Spinelli ~ http://cubiq.org/license */
+/*! iScroll v5.2.0-snapshot ~ (c) 2008-2019 Matteo Spinelli ~ http://cubiq.org/license */
 (function (window, document, Math) {
 var rAF = window.requestAnimationFrame	||
 	window.webkitRequestAnimationFrame	||
@@ -294,7 +294,7 @@ var utils = (function () {
 	};
 
 	me.getRect = function(el) {
-		if (el instanceof SVGElement) {
+		if (typeof SVGElement !== 'undefined' && el instanceof SVGElement) {
 			var rect = el.getBoundingClientRect();
 			return {
 				top : rect.top,
@@ -314,6 +314,7 @@ var utils = (function () {
 
 	return me;
 })();
+
 function IScroll (el, options) {
 	this.wrapper = typeof el == 'string' ? document.querySelector(el) : el;
 	this.scroller = this.wrapper.children[0];

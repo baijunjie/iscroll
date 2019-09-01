@@ -114,7 +114,7 @@ function build (release) {
 
 			// Insert point
 			for ( var i in postProcessing.insert ) {
-				value = postProcessing.insert[i].substr(postProcessing.insert[i].length-3) == '.js' ? 
+				value = postProcessing.insert[i].substr(postProcessing.insert[i].length-3) == '.js' ?
 					fs.readFileSync('src/' + postProcessing.insert[i]) :
 					postProcessing.insert[i];
 
@@ -150,7 +150,7 @@ function build (release) {
 
 	// Write dist file
 	var distFile = buildFile.replace('/build/', '/dist/').replace('.js', '-min.js');
-	out = uglify.minify(out, { fromString: true });
+	out = uglify.minify(out);
 
 	// Make sure dist folder exists
 	if ( !fs.existsSync('dist') ) {
